@@ -117,7 +117,7 @@ app.put('/orders/:id', async (req, res) => {
 });
 
 // Start server
-const PORT = 5000;
+//const PORT = 5000;
 // Get all orders
 app.get('/orders', async (req, res) => {
   try {
