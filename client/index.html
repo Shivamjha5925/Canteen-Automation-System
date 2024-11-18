@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GGSIP University Canteen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Welcome to Our Canteen</h1>
+  </header>
+
+  <main>
+    <section id="menu-section">
+      <h2>Menu</h2>
+      
+      <!-- Sections for different menu categories -->
+      <div id="breakfast-section" class="menu-category">
+        <h3>BREAKFAST</h3>
+        <div class="menu-container" id="breakfast"></div>
+      </div>
+      
+      <div id="fries-section" class="menu-category">
+        <h3>FRIES</h3>
+        <div class="menu-container" id="fries"></div>
+      </div>
+      
+      <div id="patty-section" class="menu-category">
+        <h3>PATTY</h3>
+        <div class="menu-container" id="patty"></div>
+      </div>
+      
+      <div id="momo-section" class="menu-category">
+        <h3>MOMO</h3>
+        <div class="menu-container" id="momo"></div>
+      </div>
+
+      <div id="burger-section" class="menu-category">
+        <h3>BURGER</h3>
+        <div class="menu-container" id="burger"></div>
+      </div>
+
+      <div id="biryani-section" class="menu-category">
+        <h3>BIRYANI</h3>
+        <div class="menu-container" id="biryani"></div>
+      </div>
+
+      <div id="tandoor-snacks-section" class="menu-category">
+        <h3>TANDOOR SNACKS</h3>
+        <div class="menu-container" id="tandoor-snacks"></div>
+      </div>
+
+      <div id="chinese-section" class="menu-category">
+        <h3>CHINESE</h3>
+        <div class="menu-container" id="chinese"></div>
+      </div>
+
+      <div id="soups-section" class="menu-category">
+        <h3>SOUPS</h3>
+        <div class="menu-container" id="soups"></div>
+      </div>
+    </section>
+
+    <section id="cart-section">
+      <h2>Your Cart</h2>
+      <ul id="cart"></ul>
+      <p id="total-price">Total: ₹<span id="totalAmount">0</span></p>
+      <label for="payment-method">Payment Method:</label>
+      <select id="payment-method">
+        <option value="online">Online</option>
+        <option value="counter">Counter</option>
+      </select>
+      <button onclick="placeOrder()">Place Order</button>
+    </section>
+  </main>
+
+  <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Example of how to dynamically populate the menu items
+    // Fetch the menu items data from the backend (adjust URL to your server route)
+    fetch('/menu')
+      .then(response => response.json())
+      .then(menuItems => {
+        // Categorize items into sections based on the category
+        menuItems.forEach(item => {
+          const category = item.category.toLowerCase();
+          const section = document.getElementById(`${category}-section`);
+          const container = section.querySelector('.menu-container');
+
+          // Create menu item HTML with image
+          const menuItemHTML = `
+            <div class="menu-item">
+              <h4>${item.name}</h4>
+              <img src="{{image}}" alt="Menu Item">
+
+              <p>Price: ₹${item.price}</p>
+            </div>
+          `;
+
+          container.innerHTML += menuItemHTML;
+        });
+      })
+      .catch(error => console.error('Error fetching menu items:', error));
+  </script>
+</body>
+</html>
