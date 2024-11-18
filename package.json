@@ -1,7 +1,7 @@
 {
   "name": "canteen-automation-system",
   "version": "1.0.0",
-  "description": "<<<<<<< HEAD\r # Canteen Automation System\r This project is designed to automate canteen orders and stock management.\r =======\r # Canteen-Automation-System\r >>>>>>> 414db8306a9642d56dbac80f122b5a15e80e4cee",
+  "description": "Canteen Automation System - This project is designed to automate canteen orders and stock management.",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
