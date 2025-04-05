@@ -77,32 +77,6 @@
 
   <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
   <script src="app.js"></script>
-  <script>
-    // Example of how to dynamically populate the menu items
-    // Fetch the menu items data from the backend (adjust URL to your server route)
-    fetch('/menu')
-      .then(response => response.json())
-      .then(menuItems => {
-        // Categorize items into sections based on the category
-        menuItems.forEach(item => {
-          const category = item.category.toLowerCase();
-          const section = document.getElementById(`${category}-section`);
-          const container = section.querySelector('.menu-container');
-
-          // Create menu item HTML with image
-          const menuItemHTML = `
-            <div class="menu-item">
-              <h4>${item.name}</h4>
-              <img src="{{image}}" alt="Menu Item">
-
-              <p>Price: ₹${item.price}</p>
-            </div>
-          `;
-
-          container.innerHTML += menuItemHTML;
-        });
-      })
-      .catch(error => console.error('Error fetching menu items:', error));
-  </script>
+  
 </body>
 </html>

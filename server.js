@@ -1,12 +1,11 @@
 require('dotenv').config();
-
+const Counter = require('./counterModel');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const Pusher = require('pusher');
 const Joi = require('joi');
-
 const app = express();
 
 // Pusher setup
@@ -33,6 +32,16 @@ mongoose.connect(process.env.MONGO_URI)
 const MenuItem = require('./models/MenuItem');
 const Order = require('./models/Order');
 
+const orderSchema = Joi.object({
+  items: Joi.array().items(Joi.object({
+      name: Joi.string().required(),
+      quantity: Joi.number().integer().min(1).required(),
+      price: Joi.number().min(0).required(),
+  })).min(1).required(),
+  totalPrice: Joi.number().min(0).required(),
+  paymentMethod: Joi.string().valid('online', 'counter').required(),
+});
+
 // Routes
 
 // Test route
@@ -52,72 +61,58 @@ app.get('/api/menu', async (req, res) => {
 
 // Create an order
 app.post('/api/orders', async (req, res) => {
-  try {
-    const { items, totalPrice, paymentMethod } = req.body;
+  console.log("Raw req.body:", req.body); // Log the raw, unparsed body
+    console.log("typeof req.body", typeof req.body); // Check the type
+    try {
+        console.log("Parsed req.body:", req.body); // Log after parsing
+        const { error } = orderSchema.validate(req.body);
+        if (error) {
+            console.log("Joi Validation Error:", error.details); // Log detailed Joi errors
+            return res.status(400).json({ message: error.details[0].message });
+        }
 
-    // Fetch the last order and determine the new order number
-    const lastOrder = await Order.findOne().sort({ orderNumber: -1 });
-    const newOrderNumber = lastOrder ? lastOrder.orderNumber + 1 : 1;
+      let counter = await Counter.findOne({ _id: 'orderCounter' });
 
-    // Create a new order
-    const newOrder = new Order({
-      items,
-      totalPrice,
-      paymentMethod,
-      orderNumber: newOrderNumber, // Store as a number
+      if (!counter) {
+          // Find max order number in Orders collection
+          const maxOrder = await Order.aggregate([
+              { $group: { _id: null, maxOrderNumber: { $max: "$orderNumber" } } }
+          ]);
+          const initialOrderNumber = maxOrder.length > 0 ? maxOrder[0].maxOrderNumber + 1 : 1;
+
+          counter = new Counter({ _id: 'orderCounter', orderNumber: initialOrderNumber });
+          await counter.save();
+      }
+
+      const updatedCounter = await Counter.findOneAndUpdate(
+          { _id: 'orderCounter' },
+          { $inc: { orderNumber: 1 } },
+          { new: true }
+      );
+
+      const newOrder = new Order({
+        items: req.body.items,
+        totalPrice: req.body.totalPrice,
+        paymentMethod: req.body.paymentMethod,
+        orderNumber: updatedCounter.orderNumber,
     });
 
-    await newOrder.save();
+      await newOrder.save();
+      const formattedOrderNumber = `ORD-${newOrder.orderNumber.toString().padStart(3, '0')}`;
+      res.json({ success: true, orderNumber: formattedOrderNumber });
 
-    // Format the order number for response or events
-    const formattedOrderNumber = `ORD-${newOrderNumber.toString().padStart(3, '0')}`;
-    res.json({ orderNumber: formattedOrderNumber });
-
-    // Trigger Pusher event with the formatted order number
-    pusher.trigger('order-channel', 'order-update', {
-      orderNumber: formattedOrderNumber,
-      status: 'new',
-    });
+      pusher.trigger('order-channel', 'order-update', {
+          orderNumber: formattedOrderNumber,
+          status: 'new',
+      });
   } catch (err) {
-    console.error('Error placing order:', err);
-    res.status(500).json({ message: 'Error placing order' });
-  }
-});
-
-
-// Update order status
-app.put('/orders/:id', async (req, res) => {
-  try {
-    const { status } = req.body;
-    const validStatuses = ['new', 'in-progress', 'completed', 'cancelled'];
-
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status value' });
-    }
-
-    const updatedOrder = await Order.findByIdAndUpdate(
-      req.params.id,
-      { orderStatus: status },
-      { new: true }
-    );
-
-    if (!updatedOrder) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-
-    pusher.trigger('order-channel', 'order-update', {
-      orderNumber: updatedOrder.orderNumber,
-      status: updatedOrder.orderStatus,
-    });
-
-    res.json(updatedOrder);
-  } catch (err) {
-    res.status(500).json({ message: 'Error updating order status' });
+      console.error('Error placing order:', err);
+      res.status(500).json({ message: 'Error placing order: ' + err.message });
   }
 });
 
 // Start server
-//const PORT = 5000;
+const PORT = 5000;
 // Get all orders
 app.get('/orders', async (req, res) => {
   try {
@@ -132,4 +127,37 @@ app.get('/orders', async (req, res) => {
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
+});
+
+
+// Update order status
+app.put('/api/orders/:orderId/status', async (req, res) => {
+  try {
+      const { orderId } = req.params;
+      const { status } = req.body;
+
+      const updatedOrder = await Order.findByIdAndUpdate(
+          orderId,
+          { $set: { orderStatus: status } },
+          { new: true }
+      );
+
+      if (!updatedOrder) {
+          return res.status(404).json({ message: 'Order not found' });
+      }
+
+      // Log before triggering to be sure
+      console.log("Sending Pusher event for order:", updatedOrder._id, "Status:", updatedOrder.orderStatus);
+
+      pusher.trigger('order-channel', 'order-update', {
+          orderId: updatedOrder._id.toString(), // Send _id as a string (important!)
+          orderStatus: updatedOrder.orderStatus,
+          orderNumber: updatedOrder.orderNumber
+      });
+
+      res.json(updatedOrder);
+  } catch (err) {
+      console.error('Error updating order status:', err);
+      res.status(500).json({ message: 'Error updating order status: ' + err.message });
+  }
 });

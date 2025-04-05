@@ -12,23 +12,33 @@ const menuContainer = {
 const cartContainer = document.getElementById("cart");
 const totalAmount = document.getElementById("totalAmount");
 
-// Initialize Pusher
 const pusher = new Pusher('af1de85d6af0f9f6dae9', { cluster: 'ap2' });
-
-// Subscribe to the channel
 const channel = pusher.subscribe('order-channel');
 
-// Listen for order updates
 channel.bind('order-update', (data) => {
-  if (data.status) {
-    alert(`Order #${data.orderNumber} is now ${data.status}`);
-    console.log(`Order Update: ${data.orderNumber} - ${data.status}`);
-  }
+    console.log("Pusher event received:", data); // Keep this for debugging
+
+    // *** UPDATE THE UI HERE ***
+    const orderStatusElement = document.getElementById(`status-${data.orderId}`); // Use the stringified _id
+    console.log("orderStatusElement",orderStatusElement);
+    if (orderStatusElement) {
+        orderStatusElement.textContent = data.orderStatus;
+        alert(`Order #${data.orderNumber} is now ${data.orderStatus}`);
+    } else {
+        console.error("Element not found:", `status-${data.orderId}`);
+    }
+});
+pusher.connection.bind('error', function(err) {
+  console.error("Pusher connection error:", err);
+});
+
+pusher.connection.bind('connected', function() {
+  console.log('Pusher connected!');
 });
 
 // Fetch and display menu items
 fetch('http://localhost:5000/api/menu')
-  .then(response => response.json())
+  .then(response => response.json()) // Correct: Parse the JSON response
   .then(data => {
     if (data && data.length > 0) {
       data.forEach(item => {
@@ -105,27 +115,40 @@ function removeFromCart(index) {
 }
 
 function placeOrder() {
-  const paymentMethod = document.getElementById("payment-method").value;
-  const order = {
-    items: cart,
-    totalPrice: total,
-    paymentMethod: paymentMethod
-  };
-  fetch("http://localhost:5000/api/orders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(order)
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      alert("Order placed successfully!");
-      cart = [];
-      total = 0;
-      renderCart();
+    if (cart.length === 0) {
+        alert("Your cart is empty. Please add items before placing an order.");
+        return;
     }
-  })
-  .catch(error => console.error('Error placing order:', error));
+
+    const paymentMethod = document.getElementById("payment-method").value;
+    const order = {
+        items: cart,
+        totalPrice: total, // Use the 'total' variable here!
+        paymentMethod: paymentMethod,
+    };
+
+    console.log("Order being sent:", order); // Keep this for debugging!
+
+    fetch("http://localhost:5000/api/orders", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(order),
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {throw new Error(err.message)})
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert("Order placed successfully!");
+            cart = [];
+            total = 0;
+            renderCart();
+        }
+    })
+    .catch(error => console.error('Error placing order:', error));
 }
