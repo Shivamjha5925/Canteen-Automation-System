@@ -19,11 +19,19 @@ channel.bind('order-update', (data) => {
     console.log("Pusher event received:", data); // Keep this for debugging
 
     // *** UPDATE THE UI HERE ***
-    const orderStatusElement = document.getElementById(`status-${data.orderId}`); // Use the stringified _id
+    const orderStatusElement = document.getElementById(`status-${data.orderNumber}`); // Use the stringified _id
+    
     console.log("orderStatusElement",orderStatusElement);
     if (orderStatusElement) {
         orderStatusElement.textContent = data.orderStatus;
-        alert(`Order #${data.orderNumber} is now ${data.orderStatus}`);
+        const notification = document.getElementById("notification");
+notification.textContent = `Order #${data.orderNumber} is now ${data.orderStatus}`;
+notification.classList.remove("hidden");
+
+// Auto-hide after 3 seconds
+setTimeout(() => {
+  notification.classList.add("hidden");
+}, 3000);
     } else {
         console.error("Element not found:", `status-${data.orderId}`);
     }
@@ -143,12 +151,14 @@ function placeOrder() {
         return response.json();
     })
     .then(data => {
-        if (data.success) {
-            alert("Order placed successfully!");
-            cart = [];
-            total = 0;
-            renderCart();
-        }
+      if (data.success) {
+        alert(`Order ${data.orderNumber} placed successfully!`);
+        cart = [];
+        total = 0;
+        renderCart();
+    } else {
+        alert("Failed to place order.");
+    }
     })
     .catch(error => console.error('Error placing order:', error));
 }

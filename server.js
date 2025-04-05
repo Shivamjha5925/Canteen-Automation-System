@@ -95,7 +95,10 @@ app.post('/api/orders', async (req, res) => {
         totalPrice: req.body.totalPrice,
         paymentMethod: req.body.paymentMethod,
         orderNumber: updatedCounter.orderNumber,
-    });
+        orderStatus: 'new', 
+      });
+      
+      
 
       await newOrder.save();
       const formattedOrderNumber = `ORD-${newOrder.orderNumber.toString().padStart(3, '0')}`;

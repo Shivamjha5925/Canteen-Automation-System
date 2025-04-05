@@ -78,5 +78,28 @@
   <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
   <script src="app.js"></script>
   
+  <div id="notification" class="notification hidden">Order Update</div>
+
+<style>
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+    font-weight: bold;
+    z-index: 9999;
+    transition: opacity 0.5s ease-in-out;
+}
+.notification.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+</style>
+
+
 </body>
 </html>
