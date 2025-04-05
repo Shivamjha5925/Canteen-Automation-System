@@ -37,7 +37,7 @@ pusher.connection.bind('connected', function() {
 });
 
 // Fetch and display menu items
-fetch('http://localhost:5000/api/menu')
+fetch('https://canteen-automation-system-uk4t.onrender.com/api/menu')
   .then(response => response.json()) // Correct: Parse the JSON response
   .then(data => {
     if (data && data.length > 0) {
@@ -129,7 +129,7 @@ function placeOrder() {
 
     console.log("Order being sent:", order); // Keep this for debugging!
 
-    fetch("http://localhost:5000/api/orders", {
+    fetch("https://canteen-automation-system-uk4t.onrender.com/api/orders", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
